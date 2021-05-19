@@ -10,8 +10,9 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
+//For better file loading, using SharedPreferences
 public class StorageUtil {
-    private final String STORAGE = " com.valdioveliu.valdio.audioplayer.STORAGE";
+    private final String STORAGE = " com.example.musicplayerx.STORAGE";
     private SharedPreferences preferences;
     private Context context;
 
@@ -31,6 +32,7 @@ public class StorageUtil {
 
     public ArrayList<Audio> loadAudio() {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
+
         Gson gson = new Gson();
         String json = preferences.getString("audioArrayList", null);
         Type type = new TypeToken<ArrayList<Audio>>() {
@@ -40,6 +42,7 @@ public class StorageUtil {
 
     public void storeAudioIndex(int index) {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
+
         SharedPreferences.Editor editor = preferences.edit();
         editor.putInt("audioIndex", index);
         editor.apply();
@@ -47,11 +50,13 @@ public class StorageUtil {
 
     public int loadAudioIndex() {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
+
         return preferences.getInt("audioIndex", -1);//return -1 if no data found
     }
 
     public void clearCachedAudioPlaylist() {
         preferences = context.getSharedPreferences(STORAGE, Context.MODE_PRIVATE);
+
         SharedPreferences.Editor editor = preferences.edit();
         editor.clear();
         editor.commit();

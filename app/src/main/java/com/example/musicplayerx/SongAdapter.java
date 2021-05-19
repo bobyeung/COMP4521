@@ -2,6 +2,7 @@ package com.example.musicplayerx;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,39 +14,48 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.musicplayerx.service.MediaPlayerService;
+
+import java.util.ArrayList;
 import java.util.List;
 
 //For displaying on the recycler view
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> {
 
-    List<Audio> songs;
-    List<Integer> iconList;
+    ArrayList<Audio> songs;
+    ArrayList<Integer> iconList;
     Context context;    //Probably who is calling this function
 
     //For click
-    private NewOnClickListener clickListener;
+    private SongOnClickListener clickListener;
 
     //Action performed when item is clicked
-    public class NewOnClickListener implements View.OnClickListener
+    public class SongOnClickListener implements View.OnClickListener
     {
-
         int position;
-        public NewOnClickListener(int position) {
+        public SongOnClickListener(int position) {
             this.position = position;
         }
 
         @Override
         public void onClick(View v)
         {
-            //read your lovely variable
+            /*
             MainActivity mainActivity = (MainActivity) context;
             mainActivity.playAudio(position);
-            ////Intent intent =
-        }
 
+            Intent intent = new Intent(context, PlayerActivity.class);
+            intent.putExtra("songs", songs);
+            intent.putExtra("activeSong", MediaPlayerService.activeAudio);
+             */
+            MainActivity mainActivity = (MainActivity) context;
+            Intent intent = new Intent(context, PlayerActivity.class);
+            Utility.playAudio(context, position, null);
+            context.startActivity(intent);
+        }
     };
 
-    public SongAdapter(Context context, List<Integer> iconList, List<Audio> songs){
+    public SongAdapter(Context context, ArrayList<Integer> iconList, ArrayList<Audio> songs){
         this.context = context;
         this.iconList = iconList;
         this.songs = songs;
@@ -65,7 +75,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
         holder.songName.setText(songs.get(position).getTitle());
         holder.songArtist.setText(songs.get(position).getArtist());
 
-        clickListener = new NewOnClickListener(position);
+        clickListener = new SongOnClickListener(position);
         holder.itemView.setOnClickListener(clickListener);
     }
 

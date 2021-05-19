@@ -48,7 +48,7 @@ public class SongFragment extends Fragment {
         }
         SongFragment fragment = new SongFragment();
         Bundle arguments = new Bundle();
-        arguments.putSerializable("Audio", list);
+        arguments.putSerializable("songs", list);
         fragment.setArguments(arguments);
         return fragment;
     }
@@ -77,7 +77,7 @@ public class SongFragment extends Fragment {
         }
 
         //Repeat based on audioList
-        audioList = (ArrayList<Audio>) getArguments().getSerializable("Audio");
+        audioList = (ArrayList<Audio>) getArguments().getSerializable("songs");
         iconList = Utility.repeatElements(iconId, audioList.size());
 
         //Set up the view

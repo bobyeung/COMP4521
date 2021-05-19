@@ -42,15 +42,17 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
+    public static final String Broadcast_PLAY_NEW_AUDIO = "com.example.musicplayerx.PlayNewAudio";
+
+    // Default Navigation Menu
     private AppBarConfiguration mAppBarConfiguration;
     private Toolbar toolbar;
 
-    public static MediaPlayerService player;
+    public static MediaPlayerService player;    ////Originally private non-static
     boolean serviceBound = false;
 
-    //For other fragments to use as well, or maybe ViewModel???
+    ////Originally private
     public ArrayList<Audio> audioList;
-    public static final String Broadcast_PLAY_NEW_AUDIO = "com.example.musicplayerx.PlayNewAudio";
 
     //Binding this Client to the AudioPlayer Service
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -61,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             player = binder.getService();
             serviceBound = true;
 
-            Log.d("Service", "Connected");
+            Log.d("Service", "Bound");
             Toast.makeText(MainActivity.this, "Service Bound", Toast.LENGTH_SHORT).show();
         }
 
@@ -70,6 +72,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             serviceBound = false;
         }
     };
+
+    //////Basic Activity Methods
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -84,9 +88,39 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setUpViewPager2();
         setUpDrawer();
 
-        //just for testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
-        playAudio(0);
+        //Start service
+        Intent playerIntent = new Intent(this, MediaPlayerService.class);
+        startService(playerIntent);
+        bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+
+        ////Testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
+        //playAudio(0);
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (serviceBound) {
+            // If want run in background even app is closed, comment out this, but
+            // TODO**in service notification should have these when pressed "closed"
+            unbindService(serviceConnection);
+            player.stopSelf();
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        savedInstanceState.putBoolean("ServiceState", serviceBound);
+        super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        serviceBound = savedInstanceState.getBoolean("ServiceState");
+    }
+
+    ////// For Navigataion Menu
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
@@ -107,59 +141,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        savedInstanceState.putBoolean("ServiceState", serviceBound);
-        super.onSaveInstanceState(savedInstanceState);
-    }
-
-    @Override
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        serviceBound = savedInstanceState.getBoolean("ServiceState");
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (serviceBound) {
-            // If want run in background even app is closed, comment out this, but
-            // TODO**in service notification should have these when pressed "closed"
-            //unbindService(serviceConnection);
-            //player.stopSelf();
-        }
-    }
-
-    public ArrayList<Audio> getAudioList(){
-        return audioList;
-    }
-
+    ////TODO
     public void playAudio(int audioIndex) {
         //Check is service is active
         if (!serviceBound) {
 
+            //Instead of passing the Serializable audioList to Extra of Intent
             //Store Serializable audioList to SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
             storage.storeAudio(audioList);
             storage.storeAudioIndex(audioIndex);
 
+            //startService only first time call its onCreate, AND also once for onStart BECAUSE we use broadcast to play audio
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
-
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
         } else {
             //Service is active
             //Send media with BroadcastReceiver
-
-            //Store the new audioIndex to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
-            storage.storeAudioIndex(audioIndex);
-
-            //Service is active
-            //Send a broadcast to the service -> PLAY_NEW_AUDIO
-            Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
-            sendBroadcast(broadcastIntent);
+            Utility.playAudio(this, audioIndex, audioList);
         }
     }
 

@@ -39,6 +39,7 @@
         android:id="@+id/songArtist2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="center"
         android:text="Artist"
         android:textColor="@color/black"
         android:textSize="20sp"
@@ -51,6 +52,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="50dp"
+        android:gravity="center"
         android:text="Song Name"
         android:textColor="@color/black"
         android:textSize="30sp"
@@ -102,12 +104,14 @@
         android:layout_height="60dp"
         android:layout_marginTop="200dp"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
         android:background="@null"
+        android:contentDescription="play"
+        android:scaleType="fitCenter"
+        android:src="@drawable/playicon"
+        android:tint="?android:attr/colorPressedHighlight"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/songIcon2"
-        tools:srcCompat="@drawable/playicon" />
+        app:layout_constraintTop_toBottomOf="@+id/songIcon2" />
 
     <ImageButton
         android:id="@+id/previousSong"
@@ -116,11 +120,12 @@
         android:layout_marginEnd="20dp"
         android:layout_marginRight="20dp"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
         android:background="@null"
+        android:contentDescription="previous"
+        android:scaleType="fitCenter"
+        android:src="@drawable/previousicon"
         app:layout_constraintEnd_toStartOf="@+id/playPause"
-        app:layout_constraintTop_toTopOf="@+id/playPause"
-        tools:srcCompat="@drawable/previousicon" />
+        app:layout_constraintTop_toTopOf="@+id/playPause" />
 
     <ImageButton
         android:id="@+id/nextSong"
@@ -129,11 +134,12 @@
         android:layout_marginStart="20dp"
         android:layout_marginLeft="20dp"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
         android:background="@null"
+        android:contentDescription="next"
+        android:scaleType="fitCenter"
+        android:src="@drawable/nexticon"
         app:layout_constraintStart_toEndOf="@+id/playPause"
-        app:layout_constraintTop_toTopOf="@+id/playPause"
-        tools:srcCompat="@drawable/nexticon" />
+        app:layout_constraintTop_toTopOf="@+id/playPause" />
 
     <ImageButton
         android:id="@+id/repeatSong"
@@ -142,11 +148,12 @@
         android:layout_marginEnd="20dp"
         android:layout_marginRight="20dp"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
         android:background="@null"
+        android:contentDescription="repeat"
+        android:scaleType="fitCenter"
+        android:src="@drawable/repeaticon_all"
         app:layout_constraintEnd_toStartOf="@+id/previousSong"
-        app:layout_constraintTop_toTopOf="@+id/playPause"
-        tools:srcCompat="@drawable/repeatIcon_all" />
+        app:layout_constraintTop_toTopOf="@+id/playPause" />
 
     <ImageButton
         android:id="@+id/shuffleSong"
@@ -155,10 +162,11 @@
         android:layout_marginStart="20dp"
         android:layout_marginLeft="20dp"
         android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
         android:background="@null"
+        android:contentDescription="shuffle"
+        android:scaleType="fitCenter"
+        android:src="@drawable/shuffleicon"
         app:layout_constraintStart_toEndOf="@+id/nextSong"
-        app:layout_constraintTop_toTopOf="@+id/playPause"
-        tools:srcCompat="@drawable/shuffleIcon" />
+        app:layout_constraintTop_toTopOf="@+id/playPause" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

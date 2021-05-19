@@ -1,5 +1,11 @@
 package com.example.musicplayerx;
 
+import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
+
+import com.example.musicplayerx.service.MediaPlayerService;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,5 +36,25 @@ public final class Utility {
         }
         ArrayList<T> dup2 = new ArrayList<T>(Arrays.asList(dup));
         return dup2;
+    }
+
+    public static void playAudio(Context context, int audioIndex, ArrayList<Audio> audioList){
+        //Service is active
+        //Send media with BroadcastReceiver
+
+        ////TODO may change to passing different audioLists as well if in other fragments
+        //Store the new audioIndex to SharedPreferences
+        StorageUtil storage = new StorageUtil(context); ////Maybe is MainActivity
+        storage.storeAudioIndex(audioIndex);
+        if (audioList != null){ //Using default otherwise
+            storage.storeAudio(audioList);
+        }
+
+        //Service is active
+        //Send a broadcast to the service -> PLAY_NEW_AUDIO
+        Intent broadcastIntent = new Intent(MainActivity.Broadcast_PLAY_NEW_AUDIO);
+        context.sendBroadcast(broadcastIntent);
+
+        Log.v("Utility", "broadcast sent");
     }
 }
