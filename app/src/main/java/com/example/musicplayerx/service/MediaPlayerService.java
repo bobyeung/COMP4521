@@ -1,5 +1,7 @@
 package com.example.musicplayerx.service;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -78,6 +80,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
+
+    ////Test
+    static final int NOTIFICATION_ID2 = 543;
+
+    public static boolean isServiceRunning = false;
 
     //Becoming noisy
     private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
@@ -239,15 +246,23 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
-        return super.onStartCommand(intent, flags, startId);
+
+        ////Test
+        if (intent != null && intent.getAction().equals(R.string.action_start_service)) {      ////TODO
+            startServiceWithNotification();
+        }
+        else stopMyService();
+        return START_STICKY;
+
+        ////return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         // Perform one-time setup procedures
-        ////testing for phone
-        ////startForeground(NOTIFICATION_ID, new Notification());
+        ////Testing for phone
+        startServiceWithNotification();
 
         // Manage incoming phone calls during playback.
         // Pause MediaPlayer on incoming call,
@@ -262,6 +277,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     //It is called when service is destroyed and MediaPlayer resource needs to be released
     @Override
     public void onDestroy() {
+        ////Testing
+        isServiceRunning = false;
+
         super.onDestroy();
         if (mediaPlayer != null) {
             stopMedia();
@@ -622,6 +640,49 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         } else if (actionString.equalsIgnoreCase(ACTION_STOP)) {
             transportControls.stop();
         }
+    }
+
+    void startServiceWithNotification() {
+        if (isServiceRunning) return;
+        isServiceRunning = true;
+
+        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
+        notificationIntent.setAction(String.valueOf(R.string.action_main));  // A string containing the action name    ////TODO
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.songicon_drum);   ////TODO icon
+
+        NotificationChannel chan = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            chan = new NotificationChannel( "my_service_urgent", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
+            //chan.EnableVibration( false );
+            //chan.LockscreenVisibility = NotificationVisibility.Secret;
+
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel( chan );
+
+            Notification notification = new NotificationCompat.Builder(this)
+                    .setChannelId(chan.getId())
+                    .setContentTitle(getResources().getString(R.string.app_name))
+                    .setTicker(getResources().getString(R.string.app_name))
+                    .setContentText(getResources().getString(R.string.test_notification))       ////TODO
+                    .setSmallIcon(R.drawable.songicon_drum)     ////TODO
+                    .setLargeIcon(Bitmap.createScaledBitmap(icon, 128, 128, false))
+                    .setContentIntent(contentPendingIntent)
+                    .setOngoing(true)
+//                .setDeleteIntent(contentPendingIntent)  // if needed
+                    .build();
+            notification.flags = notification.flags | Notification.FLAG_NO_CLEAR;     // NO_CLEAR makes the notification stay when the user performs a "delete all" command
+            startForeground(NOTIFICATION_ID, notification);
+        }
+
+    }
+
+    void stopMyService() {
+        stopForeground(true);
+        stopSelf();
+        isServiceRunning = false;
     }
 
 }
