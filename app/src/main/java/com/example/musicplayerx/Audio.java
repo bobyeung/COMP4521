@@ -5,9 +5,9 @@ import java.io.Serializable;
 public class Audio implements Serializable {
 
     private String data;
-    private String title;
-    private String album;
-    private String artist;
+    private String title = "No title";
+    private String album = "No album";
+    private String artist = "No artist";
     private byte[] albumArt;
 
     public Audio(String data, String title, String album, String artist) {

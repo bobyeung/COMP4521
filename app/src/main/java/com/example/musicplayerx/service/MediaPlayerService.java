@@ -1,6 +1,5 @@
 package com.example.musicplayerx.service;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -207,6 +206,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             StorageUtil storage = new StorageUtil(getApplicationContext());
             audioList = storage.loadAudio();
             audioIndex = storage.loadAudioIndex();
+            Log.d("Index", String.valueOf(audioIndex));
 
             if (audioIndex != -1 && audioIndex < audioList.size()) {
                 //index is in a valid range
@@ -214,6 +214,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             } else {
                 stopSelf();
             }
+
+            Log.d("active1", activeAudio.getTitle());
         } catch (NullPointerException e) {
             stopSelf();
         }
@@ -315,6 +317,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         //Reset so that the MediaPlayer is not pointing to another data source
         mediaPlayer.reset();
 
+        //mp3 will be started after completion of preparing...
+        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer player) {
+                player.start();
+            }
+        });
+
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             // Set the data source to the mediaFile location
@@ -324,29 +334,31 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             stopSelf();
         }
         mediaPlayer.prepareAsync();
+
+
     }
 
-    private void playMedia() {
+    public void playMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
         }
     }
 
-    private void stopMedia() {
+    public void stopMedia() {
         if (mediaPlayer == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
         }
     }
 
-    private void pauseMedia() {
+    public void pauseMedia() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
         }
     }
 
-    private void resumeMedia() {
+    public void resumeMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
@@ -469,7 +481,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void updateMetaData() {
         Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
-                R.drawable.itemicon_drum); //replace with medias albumArt [TODO]
+                R.drawable.songicon_drum); //replace with medias albumArt [TODO]
         // Update the current metadata
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
@@ -537,7 +549,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
 
         Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.itemicon_drum); //replace with your own image TODO
+                R.drawable.songicon_drum); //replace with your own image TODO
 
         // Create a new Notification
         NotificationCompat.Builder notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this)

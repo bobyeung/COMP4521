@@ -45,11 +45,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private AppBarConfiguration mAppBarConfiguration;
     private Toolbar toolbar;
 
-    MediaPlayerService player;
+    public static MediaPlayerService player;
     boolean serviceBound = false;
 
     //For other fragments to use as well, or maybe ViewModel???
-    public static ArrayList<Audio> audioList;
+    public ArrayList<Audio> audioList;
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.example.musicplayerx.PlayNewAudio";
 
     //Binding this Client to the AudioPlayer Service
@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setUpDrawer();
 
         //just for testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
-        playAudio(5);
+        playAudio(0);
     }
 
     @Override
@@ -144,16 +144,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             storage.storeAudioIndex(audioIndex);
 
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
-
-            ////testing for phone
-            /*
-            //Newly added
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(playerIntent);
-            } else {
-                startService(playerIntent);
-            }
-             */
 
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
