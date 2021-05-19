@@ -50,6 +50,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
              */
             MainActivity mainActivity = (MainActivity) context;
             Intent intent = new Intent(context, PlayerActivity.class);
+            MediaPlayerService.activeAudio = songs.get(position);
             Utility.playAudio(context, position, null);
             context.startActivity(intent);
         }

@@ -1,6 +1,11 @@
 package com.example.musicplayerx;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.MediaMetadataRetriever;
+import android.media.MediaPlayer;
+import android.media.session.MediaController;
 import android.os.Bundle;
 
 import com.example.musicplayerx.service.MediaPlayerService;
@@ -11,9 +16,13 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
+import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
+import android.util.Base64;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
@@ -29,6 +38,10 @@ public class PlayerActivity extends AppCompatActivity {
     SeekBar seekBar;
     ImageView songIcon2;
     TextView songName2, songArtist2;
+
+    MediaControllerCompat.TransportControls controls = MediaPlayerService.transportControls;
+    Audio activeAudio = MediaPlayerService.activeAudio;
+    MediaPlayer mediaPlayer = MediaPlayerService.mediaPlayer;
 
     /*
     //Action performed when item is clicked
@@ -103,7 +116,14 @@ public class PlayerActivity extends AppCompatActivity {
         ArrayList<Audio> audioList = (ArrayList<Audio>) receivedIntent.getSerializableExtra("songs");
         Audio activeAudio = (Audio) receivedIntent.getSerializableExtra("activeSong");
         */
-        songName2.setText(MediaPlayerService.activeAudio.getTitle());
+        //byte[] decodedString = Base64.decode(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, Base64.DEFAULT);
+        //byte[] decodedString = mmr.getEmbeddedPicture();
+        //songIcon2.setImageBitmap(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
+
+        songName2.setText(activeAudio.getTitle());
+        songArtist2.setText(activeAudio.getArtist());
+
+        endTime.setText(String.valueOf(mediaPlayer.getDuration()));
 
     }
 
@@ -111,36 +131,54 @@ public class PlayerActivity extends AppCompatActivity {
         playBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayerService.transportControls.play();
+                controls.play();
             }
         });
 
         previousBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayerService.transportControls.skipToPrevious();
+                controls.skipToPrevious();
             };
         });
 
         nextBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayerService.transportControls.skipToNext();
+                controls.skipToNext();
             };
         });
 
         repeatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayerService.transportControls.setRepeatMode(PlaybackStateCompat.REPEAT_MODE_ALL);
+                controls.setRepeatMode(PlaybackStateCompat.REPEAT_MODE_ALL);
             };
         });
 
         shuffleBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                MediaPlayerService.transportControls.setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
+                controls.setShuffleMode(PlaybackStateCompat.SHUFFLE_MODE_ALL);
             };
+        });
+
+        seekBar.setMax(mediaPlayer.getDuration());
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                controls.seekTo(progress);
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
         });
     }
 }

@@ -34,6 +34,8 @@ import com.example.musicplayerx.StorageUtil;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import static android.media.MediaMetadataRetriever.METADATA_KEY_ALBUM;
+
 //Seems like the service is not forever running, same as MediaPLayer, only running when required (startService)
 //For 1 activity, can check by seeing the binding of service, when it is in bind, then some media already passed to it
 //So only change the index, but may need change
@@ -57,7 +59,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public static final String ACTION_STOP = "com.example.musicplayerx.ACTION_STOP";
 
     // This class is for manipulating this mediaplayer for thoroughly
-    private MediaPlayer mediaPlayer;
+    ////Originally private non-static
+    public static MediaPlayer mediaPlayer;
 
     // Binder given to clients
     private final IBinder iBinder = new LocalBinder();
@@ -80,7 +83,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     //Instance is created to to publish media playback information or handle media keys (by using MetaData)
     private MediaSessionManager mediaSessionManager;
     private MediaSessionCompat mediaSession;
-    public static MediaControllerCompat.TransportControls transportControls;
+    public static MediaControllerCompat.TransportControls transportControls;    ////private non-static initially
 
     //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
@@ -210,11 +213,15 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public int onStartCommand(Intent intent, int flags, int startId) {
         ////Originally just get from mediaFile from the Extra
         ////and requesting audio focus, and initMediaPlayer
+        boolean flag = true;
         try {
             //Load data from SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
+            Log.d("active1", "hi");
             audioList = storage.loadAudio();
+            Log.d("active1", "hi");
             audioIndex = storage.loadAudioIndex();
+            Log.d("active1", "hi");
 
             //***Active audio won't change, using last song if index is inapproriate
             if (audioIndex != -1 && audioIndex < audioList.size()) {
@@ -222,23 +229,28 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 activeAudio = audioList.get(audioIndex);
             } else {
                 stopSelf();
+                flag = false;
             }
 
-            Log.d("active audio is ", activeAudio.getTitle());
+            Log.d("active audio is ", "hihi");
 
         } catch (NullPointerException e) {
+            Log.w("Service onStart", "null pointer");
             stopSelf();
+            flag = false;
         }
 
         //Request audio focus
         if (requestAudioFocus() == false) {
             //Could not gain focus
             stopSelf();
+            flag = false;
         }
 
         //MediaSession is for controlling mediaplayer
         if (mediaSessionManager == null) {
             try {
+                Log.d("Service","Initing Media");
                 initMediaSession();
                 initMediaPlayer();
             } catch (RemoteException e) {
@@ -371,7 +383,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 //index is in a valid range
                 activeAudio = audioList.get(audioIndex);
             } else {
-                ////seems useless, still play the activeAudio, if add return can prevent
+                //seems useless, still play the activeAudio, if add return can prevent
                 stopSelf();
             }
 
@@ -437,6 +449,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     //////MediaSession and Controls
 
+    ////Maybe No need mediaSessionManager
     //For setting the MediaSession callbacks to handle events coming from the notification buttons
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private void initMediaSession() throws RemoteException {
@@ -515,6 +528,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, activeAudio.getAlbum())
                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.getTitle())
                 .build());
+
     }
 
     private void skipToNext() {

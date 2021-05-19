@@ -10,6 +10,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 
+////TODO save preference as well
 //For better file loading, using SharedPreferences
 public class StorageUtil {
     private final String STORAGE = " com.example.musicplayerx.STORAGE";

@@ -88,13 +88,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setUpViewPager2();
         setUpDrawer();
 
-        //Start service
+        ////Testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
+        playAudio(0);
+    }
+
+    @Override
+    protected void onStart(){
+        super.onStart();
+        //Bind service
         Intent playerIntent = new Intent(this, MediaPlayerService.class);
-        startService(playerIntent);
         bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
-        ////Testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
-        //playAudio(0);
+        StorageUtil storage = new StorageUtil(getApplicationContext());
+        storage.storeAudio(audioList);
     }
 
     @Override
@@ -141,57 +147,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         return true;
     }
 
-    ////TODO
-    public void playAudio(int audioIndex) {
-        //Check is service is active
-        if (!serviceBound) {
-
-            //Instead of passing the Serializable audioList to Extra of Intent
-            //Store Serializable audioList to SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
-            storage.storeAudio(audioList);
-            storage.storeAudioIndex(audioIndex);
-
-            //startService only first time call its onCreate, AND also once for onStart BECAUSE we use broadcast to play audio
-            Intent playerIntent = new Intent(this, MediaPlayerService.class);
-            startService(playerIntent);
-            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-
-        } else {
-            //Service is active
-            //Send media with BroadcastReceiver
-            Utility.playAudio(this, audioIndex, audioList);
-        }
-    }
-
-    private void loadAudio() {
-        ContentResolver contentResolver = getContentResolver();
-
-        //Need load from specific directory
-        //Uri uri = Uri.parse("content://com.android.externalstorage.documents/document");
-        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";    //Make sure it is music
-        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";   //Ascending order of title
-        //Cursor is used to retrieve data from storage, to loop over
-        //To display data, uses Adapter with ListView
-        Cursor cursor = contentResolver.query(uri, null, selection, null, sortOrder);
-        Log.d("Test cursor", String.valueOf(cursor.getCount()));
-        if (cursor != null && cursor.getCount() > 0) {
-            audioList = new ArrayList<>();
-            while (cursor.moveToNext()) {
-                String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
-                String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
-                String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
-                String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
-
-                Log.d("metadata", data + " " + title + " " + album + " " + artist);
-
-                // Save to audioList
-                audioList.add(new Audio(data, title, album, artist));
-            }
-        }
-        cursor.close();
-    }
+    //////Basic Setup Methods
 
     private void setUpToolbar(){
         //Toolbar
@@ -233,6 +189,62 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .setAction("Action", null).show();
             }
         });
+    }
+
+    ////// MediaPlayerService Related Methods
+
+    public void playAudio(int audioIndex) {
+        //Check is service is active
+        if (!serviceBound) {
+
+            //Instead of passing the Serializable audioList to Extra of Intent
+            //Store Serializable audioList to SharedPreferences
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            storage.storeAudio(audioList);
+            storage.storeAudioIndex(audioIndex);
+
+            //startService only first time call its onCreate, AND also once for onStart BECAUSE we use broadcast to play audio
+            Intent playerIntent = new Intent(this, MediaPlayerService.class);
+            startService(playerIntent);
+            bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE); //seems binding needs time to process
+
+            Log.d("main unbound", "hi");
+
+        } else {
+            //Service is active
+            //Send media with BroadcastReceiver
+            Utility.playAudio(this, audioIndex, audioList);
+            Log.d("main bound", "hi");
+        }
+    }
+
+    private void loadAudio() {
+        ContentResolver contentResolver = getContentResolver();
+
+        //Need load from specific directory
+        //Uri uri = Uri.parse("content://com.android.externalstorage.documents/document");
+        Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
+        String selection = MediaStore.Audio.Media.IS_MUSIC + "!= 0";    //Make sure it is music
+        String sortOrder = MediaStore.Audio.Media.TITLE + " ASC";   //Ascending order of title
+        //Cursor is used to retrieve data from storage, to loop over
+        //To display data, uses Adapter with ListView
+        Cursor cursor = contentResolver.query(uri, null, selection, null, sortOrder);
+        Log.d("Test cursor", String.valueOf(cursor.getCount()));
+        if (cursor != null && cursor.getCount() > 0) {
+            audioList = new ArrayList<>();
+            while (cursor.moveToNext()) {
+                String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
+                String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
+                String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
+                String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
+
+                Log.d("metadata", data + " " + title + " " + album + " " + artist);
+
+                // Save to audioList
+                audioList.add(new Audio(data, title, album, artist));
+            }
+        }
+        cursor.close();
     }
 
 }
