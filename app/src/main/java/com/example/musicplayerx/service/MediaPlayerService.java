@@ -92,7 +92,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         public void onReceive(Context context, Intent intent) {
             //pause audio on ACTION_AUDIO_BECOMING_NOISY
             pauseMedia();
-            buildNotification(PlaybackStatus.PAUSED);
+            //buildNotification(PlaybackStatus.PAUSED);
         }
     };
 
@@ -116,7 +116,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mediaPlayer.reset();
             initMediaPlayer();
             updateMetaData();
-            buildNotification(PlaybackStatus.PLAYING);
+            //buildNotification(PlaybackStatus.PLAYING);
         }
     };
 
@@ -241,14 +241,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 e.printStackTrace();
                 stopSelf();
             }
-            buildNotification(PlaybackStatus.PLAYING);
+            //buildNotification(PlaybackStatus.PLAYING);
         }
 
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
 
         ////Test
-        if (intent != null && intent.getAction().equals(R.string.action_start_service)) {      ////TODO
+        if (intent != null && intent.getAction().equals(getResources().getString(R.string.action_start_service))) {      ////TODO
             startServiceWithNotification();
         }
         else stopMyService();
@@ -456,14 +456,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             public void onPlay() {
                 super.onPlay();
                 resumeMedia();
-                buildNotification(PlaybackStatus.PLAYING);
+                //buildNotification(PlaybackStatus.PLAYING);
             }
 
             @Override
             public void onPause() {
                 super.onPause();
                 pauseMedia();
-                buildNotification(PlaybackStatus.PAUSED);
+                //buildNotification(PlaybackStatus.PAUSED);
             }
 
             @Override
@@ -471,7 +471,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 super.onSkipToNext();
                 skipToNext();
                 updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
+                //buildNotification(PlaybackStatus.PLAYING);
             }
 
             @Override
@@ -479,7 +479,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 super.onSkipToPrevious();
                 skipToPrevious();
                 updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
+                //buildNotification(PlaybackStatus.PLAYING);
             }
 
             @Override
@@ -647,7 +647,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         isServiceRunning = true;
 
         Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
-        notificationIntent.setAction(String.valueOf(R.string.action_main));  // A string containing the action name    ////TODO
+        notificationIntent.setAction(getResources().getString(R.string.action_main));  // A string containing the action name    ////TODO
         notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent contentPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
 

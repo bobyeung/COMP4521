@@ -144,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             storage.storeAudioIndex(audioIndex);
 
             Intent startIntent = new Intent(getApplicationContext(), MediaPlayerService.class);
-            startIntent.setAction(String.valueOf(R.string.action_start_service));
+            startIntent.setAction(getResources().getString(R.string.action_start_service));
             startService(startIntent);
             bindService(startIntent, serviceConnection, Context.BIND_AUTO_CREATE);
 
