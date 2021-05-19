@@ -67,7 +67,7 @@ public class SongFragment extends Fragment {
         //Recycler View Adapter
         Field[] fields = R.drawable.class.getFields();
         for (Field field : fields) {
-            if (field.getName().startsWith("itemicon")) {
+            if (field.getName().startsWith(getResources().getString(R.string.builtin_icon))) {
                 try {
                     iconId.add(field.getInt(null));
                 } catch (IllegalAccessException e) {
