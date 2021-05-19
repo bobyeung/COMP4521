@@ -25,6 +25,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
     //For click
     private NewOnClickListener clickListener;
 
+    //Action performed when item is clicked
     public class NewOnClickListener implements View.OnClickListener
     {
 
@@ -39,6 +40,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
             //read your lovely variable
             MainActivity mainActivity = (MainActivity) context;
             mainActivity.playAudio(position);
+            ////Intent intent =
         }
 
     };
@@ -59,7 +61,7 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        holder.myIcon.setImageResource(iconList.get(position));
+        holder.songIcon.setImageResource(iconList.get(position));
         holder.songName.setText(songs.get(position).getTitle());
         holder.songArtist.setText(songs.get(position).getArtist());
 
@@ -74,13 +76,13 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
 
     public class MyViewHolder extends RecyclerView.ViewHolder {
 
-        ImageView myIcon;
+        ImageView songIcon;
         TextView songName;
         TextView songArtist;
 
         public MyViewHolder(@NonNull View itemView){
             super(itemView);
-            myIcon = itemView.findViewById(R.id.songIcon);
+            songIcon = itemView.findViewById(R.id.songIcon);
             songName = itemView.findViewById(R.id.songName);
             songArtist = itemView.findViewById(R.id.songArtist);
         }

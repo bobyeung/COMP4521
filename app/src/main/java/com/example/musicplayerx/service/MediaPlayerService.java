@@ -1,6 +1,7 @@
 package com.example.musicplayerx.service;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -80,13 +81,18 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
 
+    ////Test
+    static final int NOTIFICATION_ID2 = 543;
+
+    public static boolean isServiceRunning = false;
+
     //Becoming noisy
     private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             //pause audio on ACTION_AUDIO_BECOMING_NOISY
             pauseMedia();
-            buildNotification(PlaybackStatus.PAUSED);
+            //buildNotification(PlaybackStatus.PAUSED);
         }
     };
 
@@ -110,7 +116,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mediaPlayer.reset();
             initMediaPlayer();
             updateMetaData();
-            buildNotification(PlaybackStatus.PLAYING);
+            //buildNotification(PlaybackStatus.PLAYING);
         }
     };
 
@@ -207,6 +213,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             StorageUtil storage = new StorageUtil(getApplicationContext());
             audioList = storage.loadAudio();
             audioIndex = storage.loadAudioIndex();
+            Log.d("Index", String.valueOf(audioIndex));
 
             if (audioIndex != -1 && audioIndex < audioList.size()) {
                 //index is in a valid range
@@ -214,6 +221,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             } else {
                 stopSelf();
             }
+
+            Log.d("active1", activeAudio.getTitle());
         } catch (NullPointerException e) {
             stopSelf();
         }
@@ -232,20 +241,28 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 e.printStackTrace();
                 stopSelf();
             }
-            buildNotification(PlaybackStatus.PLAYING);
+            //buildNotification(PlaybackStatus.PLAYING);
         }
 
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
-        return super.onStartCommand(intent, flags, startId);
+
+        ////Test
+        if (intent != null && intent.getAction().equals(getResources().getString(R.string.action_start_service))) {      ////TODO
+            startServiceWithNotification();
+        }
+        else stopMyService();
+        return START_STICKY;
+
+        ////return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
         // Perform one-time setup procedures
-        ////testing for phone
-        ////startForeground(NOTIFICATION_ID, new Notification());
+        ////Testing for phone
+        startServiceWithNotification();
 
         // Manage incoming phone calls during playback.
         // Pause MediaPlayer on incoming call,
@@ -260,6 +277,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     //It is called when service is destroyed and MediaPlayer resource needs to be released
     @Override
     public void onDestroy() {
+        ////Testing
+        isServiceRunning = false;
+
         super.onDestroy();
         if (mediaPlayer != null) {
             stopMedia();
@@ -315,6 +335,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         //Reset so that the MediaPlayer is not pointing to another data source
         mediaPlayer.reset();
 
+        //mp3 will be started after completion of preparing...
+        mediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+            @Override
+            public void onPrepared(MediaPlayer player) {
+                player.start();
+            }
+        });
+
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
         try {
             // Set the data source to the mediaFile location
@@ -324,29 +352,31 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             stopSelf();
         }
         mediaPlayer.prepareAsync();
+
+
     }
 
-    private void playMedia() {
+    public void playMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.start();
         }
     }
 
-    private void stopMedia() {
+    public void stopMedia() {
         if (mediaPlayer == null) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.stop();
         }
     }
 
-    private void pauseMedia() {
+    public void pauseMedia() {
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
             resumePosition = mediaPlayer.getCurrentPosition();
         }
     }
 
-    private void resumeMedia() {
+    public void resumeMedia() {
         if (!mediaPlayer.isPlaying()) {
             mediaPlayer.seekTo(resumePosition);
             mediaPlayer.start();
@@ -426,14 +456,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             public void onPlay() {
                 super.onPlay();
                 resumeMedia();
-                buildNotification(PlaybackStatus.PLAYING);
+                //buildNotification(PlaybackStatus.PLAYING);
             }
 
             @Override
             public void onPause() {
                 super.onPause();
                 pauseMedia();
-                buildNotification(PlaybackStatus.PAUSED);
+                //buildNotification(PlaybackStatus.PAUSED);
             }
 
             @Override
@@ -441,7 +471,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 super.onSkipToNext();
                 skipToNext();
                 updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
+                //buildNotification(PlaybackStatus.PLAYING);
             }
 
             @Override
@@ -449,7 +479,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 super.onSkipToPrevious();
                 skipToPrevious();
                 updateMetaData();
-                buildNotification(PlaybackStatus.PLAYING);
+                //buildNotification(PlaybackStatus.PLAYING);
             }
 
             @Override
@@ -469,7 +499,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void updateMetaData() {
         Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
-                R.drawable.itemicon_drum); //replace with medias albumArt [TODO]
+                R.drawable.songicon_drum); //replace with medias albumArt [TODO]
         // Update the current metadata
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
@@ -537,7 +567,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
 
         Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.itemicon_drum); //replace with your own image TODO
+                R.drawable.songicon_drum); //replace with your own image TODO
 
         // Create a new Notification
         NotificationCompat.Builder notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this)
@@ -610,6 +640,49 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         } else if (actionString.equalsIgnoreCase(ACTION_STOP)) {
             transportControls.stop();
         }
+    }
+
+    void startServiceWithNotification() {
+        if (isServiceRunning) return;
+        isServiceRunning = true;
+
+        Intent notificationIntent = new Intent(getApplicationContext(), MainActivity.class);
+        notificationIntent.setAction(getResources().getString(R.string.action_main));  // A string containing the action name    ////TODO
+        notificationIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+
+        Bitmap icon = BitmapFactory.decodeResource(getResources(), R.drawable.songicon_drum);   ////TODO icon
+
+        NotificationChannel chan = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            chan = new NotificationChannel( "my_service_urgent", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
+            //chan.EnableVibration( false );
+            //chan.LockscreenVisibility = NotificationVisibility.Secret;
+
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel( chan );
+
+            Notification notification = new NotificationCompat.Builder(this)
+                    .setChannelId(chan.getId())
+                    .setContentTitle(getResources().getString(R.string.app_name))
+                    .setTicker(getResources().getString(R.string.app_name))
+                    .setContentText(getResources().getString(R.string.test_notification))       ////TODO
+                    .setSmallIcon(R.drawable.songicon_drum)     ////TODO
+                    .setLargeIcon(Bitmap.createScaledBitmap(icon, 128, 128, false))
+                    .setContentIntent(contentPendingIntent)
+                    .setOngoing(true)
+//                .setDeleteIntent(contentPendingIntent)  // if needed
+                    .build();
+            notification.flags = notification.flags | Notification.FLAG_NO_CLEAR;     // NO_CLEAR makes the notification stay when the user performs a "delete all" command
+            startForeground(NOTIFICATION_ID, notification);
+        }
+
+    }
+
+    void stopMyService() {
+        stopForeground(true);
+        stopSelf();
+        isServiceRunning = false;
     }
 
 }
