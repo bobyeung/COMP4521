@@ -1,5 +1,6 @@
 package com.example.musicplayerx.service;
 
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -87,6 +88,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
+    public static boolean isServiceRunning = false;
 
     //////Binders
 
@@ -105,6 +107,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     private void initMediaPlayer() {
         mediaPlayer = new MediaPlayer();
+
+        //Reset so that the MediaPlayer is not pointing to another data source
+        mediaPlayer.reset();
+
         //Set up MediaPlayer event listeners
         mediaPlayer.setOnCompletionListener(this);
         mediaPlayer.setOnErrorListener(this);
@@ -112,15 +118,15 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         mediaPlayer.setOnBufferingUpdateListener(this);
         mediaPlayer.setOnSeekCompleteListener(this);
         mediaPlayer.setOnInfoListener(this);
-        //Reset so that the MediaPlayer is not pointing to another data source
-        mediaPlayer.reset();
 
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
         try {
             // Set the data source according to activeAudio instead of mediaFile
             mediaPlayer.setDataSource(activeAudio.getData());
-            Log.v("Media", activeAudio.getTitle());
+            Log.d("Media", activeAudio.getTitle());
         } catch (IOException e) {
+            Log.d("Media", "Error");
             e.printStackTrace();
             stopSelf();
         }
@@ -213,15 +219,15 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public int onStartCommand(Intent intent, int flags, int startId) {
         ////Originally just get from mediaFile from the Extra
         ////and requesting audio focus, and initMediaPlayer
-        boolean flag = true;
+        boolean flag = true;    ////Extra added, not sure useful or not
         try {
             //Load data from SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
-            Log.d("active1", "hi");
+            Log.d("active1", "hi1");
             audioList = storage.loadAudio();
-            Log.d("active1", "hi");
+            Log.d("active1", "hi2");
             audioIndex = storage.loadAudioIndex();
-            Log.d("active1", "hi");
+            Log.d("active1", "hi3");
 
             //***Active audio won't change, using last song if index is inapproriate
             if (audioIndex != -1 && audioIndex < audioList.size()) {
@@ -248,7 +254,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
 
         //MediaSession is for controlling mediaplayer
-        if (mediaSessionManager == null) {
+        if (mediaSessionManager == null && flag) {
             try {
                 Log.d("Service","Initing Media");
                 initMediaSession();
@@ -263,6 +269,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
         return super.onStartCommand(intent, flags, startId);
+        ////return START_STICKY;
     }
 
     @Override
@@ -284,6 +291,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     //It is called when service is destroyed and MediaPlayer resource needs to be released
     @Override
     public void onDestroy() {
+        isServiceRunning = false;
         super.onDestroy();
         if (mediaPlayer != null) {
             stopMedia();
@@ -489,6 +497,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             @Override
             public void onSkipToNext() {
                 super.onSkipToNext();
+                Log.d("Callbacked", "Skip next");
                 skipToNext();
                 updateMetaData();
                 buildNotification(PlaybackStatus.PLAYING);
@@ -587,6 +596,17 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             play_pauseAction = playbackAction(0);
         }
 
+        ////Newly added Notification Channel
+        NotificationChannel channel = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            channel = new NotificationChannel("my_service_urgent", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
+            //chan.EnableVibration( false );
+            //chan.LockscreenVisibility = NotificationVisibility.Secret;
+
+            NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            notificationManager.createNotificationChannel(channel);
+        }
+
         ////TODO to give icon according to song
         Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
                 R.drawable.songicon_drum); //replace with your own image
@@ -596,10 +616,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .setShowWhen(false)
                 // Set the Notification style
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
-                        // Attach our MediaSession token
-                        .setMediaSession(mediaSession.getSessionToken())
-                        // Show our playback controls in the compact notification view.
-                        .setShowActionsInCompactView(0, 1, 2))
+                // Attach our MediaSession token
+                .setMediaSession(mediaSession.getSessionToken())
+                // Show our playback controls in the compact notification view.
+                .setShowActionsInCompactView(0, 1, 2))
                 // Set the Notification color and can be changed
                 .setColor(getResources().getColor(R.color.design_default_color_on_primary))
                 // Set the small icons and can be changed
@@ -613,6 +633,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
                 .addAction(notificationAction, "pause", play_pauseAction)
                 .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2));
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            notificationBuilder.setChannelId(channel.getId());
+        }
 
         ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
     }

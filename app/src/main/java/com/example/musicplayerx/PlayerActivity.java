@@ -139,6 +139,7 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 controls.skipToPrevious();
+                getInfo();
             };
         });
 
@@ -146,6 +147,7 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 controls.skipToNext();
+                getInfo();
             };
         });
 

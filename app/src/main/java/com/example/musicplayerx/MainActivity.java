@@ -44,6 +44,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.example.musicplayerx.PlayNewAudio";
 
+    public static final String ACTION_START_SERVICE = "ACTION_START_SERVICE";
+    public static final String ACTION_MAIN = "ACTION_MAIN";
+
+    ////Originally private
+    public ArrayList<Audio> audioList;
+
     // Default Navigation Menu
     private AppBarConfiguration mAppBarConfiguration;
     private Toolbar toolbar;
@@ -51,8 +57,41 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public static MediaPlayerService player;    ////Originally private non-static
     boolean serviceBound = false;
 
-    ////Originally private
-    public ArrayList<Audio> audioList;
+
+    /*
+    // Storage Permissions
+    private static final int REQUEST_EXTERNAL_STORAGE = 1;
+    private static String[] PERMISSIONS_STORAGE = {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+    };
+
+     */
+
+    /**
+     * Checks if the app has permission to write to device storage
+     *
+     * If the app does not has permission then the user will be prompted to grant permissions
+     *
+     * @param activity
+     */
+    /*
+    public static void verifyStoragePermissions(Activity activity) {
+        // Check if we have write permission
+        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+
+        if (permission != PackageManager.PERMISSION_GRANTED) {
+            // We don't have permission so prompt the user
+            ActivityCompat.requestPermissions(
+                    activity,
+                    PERMISSIONS_STORAGE,
+                    REQUEST_EXTERNAL_STORAGE
+            );
+        }
+    }
+
+     */
+
 
     //Binding this Client to the AudioPlayer Service
     private ServiceConnection serviceConnection = new ServiceConnection() {
@@ -90,17 +129,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         ////Testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
         playAudio(0);
-    }
-
-    @Override
-    protected void onStart(){
-        super.onStart();
-        //Bind service
-        Intent playerIntent = new Intent(this, MediaPlayerService.class);
-        bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-
-        StorageUtil storage = new StorageUtil(getApplicationContext());
-        storage.storeAudio(audioList);
     }
 
     @Override
@@ -205,6 +233,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
             //startService only first time call its onCreate, AND also once for onStart BECAUSE we use broadcast to play audio
             Intent playerIntent = new Intent(this, MediaPlayerService.class);
+            ////Intent playerIntent = new Intent(getApplicationContext(), MediaPlayerService.class);
+            ////playerIntent.setAction(MainActivity.ACTION_START_SERVICE);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE); //seems binding needs time to process
 
