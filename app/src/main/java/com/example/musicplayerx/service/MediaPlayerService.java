@@ -1,5 +1,6 @@
 package com.example.musicplayerx.service;
 
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import static android.media.MediaMetadataRetriever.METADATA_KEY_ALBUM;
+import static com.example.musicplayerx.MainActivity.ACTION_MAIN;
 
 //Seems like the service is not forever running, same as MediaPLayer, only running when required (startService)
 //For 1 activity, can check by seeing the binding of service, when it is in bind, then some media already passed to it
@@ -89,6 +91,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     //AudioPlayer notification ID
     private static final int NOTIFICATION_ID = 101;
     public static boolean isServiceRunning = false;
+    private Notification notification;
 
     //////Binders
 
@@ -100,64 +103,6 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public class LocalBinder extends Binder {
         public MediaPlayerService getService() {
             return MediaPlayerService.this;
-        }
-    }
-
-    //////MediaPlayer, should be automatically play after prepared
-
-    private void initMediaPlayer() {
-        mediaPlayer = new MediaPlayer();
-
-        //Reset so that the MediaPlayer is not pointing to another data source
-        mediaPlayer.reset();
-
-        //Set up MediaPlayer event listeners
-        mediaPlayer.setOnCompletionListener(this);
-        mediaPlayer.setOnErrorListener(this);
-        mediaPlayer.setOnPreparedListener(this);
-        mediaPlayer.setOnBufferingUpdateListener(this);
-        mediaPlayer.setOnSeekCompleteListener(this);
-        mediaPlayer.setOnInfoListener(this);
-
-        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-
-        try {
-            // Set the data source according to activeAudio instead of mediaFile
-            mediaPlayer.setDataSource(activeAudio.getData());
-            Log.d("Media", activeAudio.getTitle());
-        } catch (IOException e) {
-            Log.d("Media", "Error");
-            e.printStackTrace();
-            stopSelf();
-        }
-
-        mediaPlayer.prepareAsync();
-    }
-
-    public void playMedia() {
-        if (!mediaPlayer.isPlaying()) {
-            mediaPlayer.start();
-        }
-    }
-
-    public void stopMedia() {
-        if (mediaPlayer == null) return;
-        if (mediaPlayer.isPlaying()) {
-            mediaPlayer.stop();
-        }
-    }
-
-    public void pauseMedia() {
-        if (mediaPlayer.isPlaying()) {
-            mediaPlayer.pause();
-            resumePosition = mediaPlayer.getCurrentPosition();
-        }
-    }
-
-    public void resumeMedia() {
-        if (!mediaPlayer.isPlaying()) {
-            mediaPlayer.seekTo(resumePosition);
-            mediaPlayer.start();
         }
     }
 
@@ -229,7 +174,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             audioIndex = storage.loadAudioIndex();
             Log.d("active1", "hi3");
 
-            //***Active audio won't change, using last song if index is inapproriate
+            //***Active audio won't change, using last song if index is inapproriate (not related to -1, just some weird behaviour only)
+            //-1 is for detecting StorageUtil.loadIndex
             if (audioIndex != -1 && audioIndex < audioList.size()) {
                 //index is in a valid range
                 activeAudio = audioList.get(audioIndex);
@@ -260,16 +206,29 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 initMediaSession();
                 initMediaPlayer();
             } catch (RemoteException e) {
+                Log.d("Media", "Fail Init");
                 e.printStackTrace();
                 stopSelf();
             }
-            buildNotification(PlaybackStatus.PLAYING);
+
+            ////buildNotification(PlaybackStatus.PLAYING);
+            buildNotification(PlaybackStatus.PAUSED);
+
+            ////If it is the first time called by MainActivity, foreground service will run as well
+            if (intent.getAction().equals(MainActivity.ACTION_START_SERVICE) && !isServiceRunning){
+                Log.d("Foreground", "ok");
+                isServiceRunning = true;
+                startForeground(NOTIFICATION_ID, notification);
+            }
+            else{
+                stopMyService();
+            }
         }
 
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
-        return super.onStartCommand(intent, flags, startId);
-        ////return START_STICKY;
+        ////return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
     }
 
     @Override
@@ -283,7 +242,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         // Manage incoming phone calls during playback. Pause MediaPlayer on incoming call, Resume on hangup.
         callStateListener();
         //ACTION_AUDIO_BECOMING_NOISY -- change in audio outputs -- BroadcastReceiver
-        registerBecomingNoisyReceiver();
+        register_becomingNoisyReceiver();
         //Listen for new Audio to play -- BroadcastReceiver
         register_playNewAudio();
     }
@@ -293,6 +252,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     public void onDestroy() {
         isServiceRunning = false;
         super.onDestroy();
+
         if (mediaPlayer != null) {
             stopMedia();
             mediaPlayer.release();
@@ -311,6 +271,64 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         //clear cached playlist
         new StorageUtil(getApplicationContext()).clearCachedAudioPlaylist();
+    }
+
+    //////MediaPlayer, should be automatically play after prepared
+
+    private void initMediaPlayer() {
+        mediaPlayer = new MediaPlayer();
+
+        //Reset so that the MediaPlayer is not pointing to another data source
+        mediaPlayer.reset();
+
+        //Set up MediaPlayer event listeners
+        mediaPlayer.setOnCompletionListener(this);
+        mediaPlayer.setOnErrorListener(this);
+        mediaPlayer.setOnPreparedListener(this);
+        mediaPlayer.setOnBufferingUpdateListener(this);
+        mediaPlayer.setOnSeekCompleteListener(this);
+        mediaPlayer.setOnInfoListener(this);
+
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+        try {
+            // Set the data source according to activeAudio instead of mediaFile
+            mediaPlayer.setDataSource(activeAudio.getData());
+            Log.d("Media", activeAudio.getTitle());
+        } catch (IOException e) {
+            Log.d("Media", "Error");
+            e.printStackTrace();
+            stopSelf();
+        }
+
+        mediaPlayer.prepareAsync();
+    }
+
+    public void playMedia() {
+        if (!mediaPlayer.isPlaying()) {
+            mediaPlayer.start();
+        }
+    }
+
+    public void stopMedia() {
+        if (mediaPlayer == null) return;
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.stop();
+        }
+    }
+
+    public void pauseMedia() {
+        if (mediaPlayer.isPlaying()) {
+            mediaPlayer.pause();
+            resumePosition = mediaPlayer.getCurrentPosition();
+        }
+    }
+
+    public void resumeMedia() {
+        if (!mediaPlayer.isPlaying()) {
+            mediaPlayer.seekTo(resumePosition);
+            mediaPlayer.start();
+        }
     }
 
     //////AudioFocus things
@@ -381,10 +399,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             Log.v("Service broadcast", "broadcast received");
 
             //Get the new media index form SharedPreferences
-            StorageUtil storageUtil = new StorageUtil(getApplicationContext());
-            audioIndex = storageUtil.loadAudioIndex();
+            StorageUtil storage = new StorageUtil(getApplicationContext());
+            audioIndex = storage.loadAudioIndex();
             ////TODO tried change the audioList
-            audioList = storageUtil.loadAudio();
+            audioList = storage.loadAudio();
 
             //***Active audio won't change, using last song if index is inapproriate
             if (audioIndex != -1 && audioIndex < audioList.size()) {
@@ -413,7 +431,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         registerReceiver(playNewAudio, filter);
     }
 
-    private void registerBecomingNoisyReceiver() {
+    private void register_becomingNoisyReceiver() {
         //register after getting audio focus
         IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
         registerReceiver(becomingNoisyReceiver, intentFilter);
@@ -579,12 +597,20 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     //////Notification and Interactions
 
-    //building the notification UI and setting up all the events that will trigger when a user clicks a notification button
-    //using PendingIntent to pass the actions
+    //Building the notification UI and setting up all the events that will trigger when a user clicks a notification button
+    //Using PendingIntent to pass the actions
+    //Everytime playbackStatus changed, the notification needs to change correspondingly
     private void buildNotification(PlaybackStatus playbackStatus) {
         int notificationAction = android.R.drawable.ic_media_pause;//needs to be initialized
         PendingIntent play_pauseAction = null;
 
+        ////For onClick notification
+        Intent onClickIntent = new Intent(getApplicationContext(), MainActivity.class);
+        onClickIntent.setAction(ACTION_MAIN);  // A string containing the action name
+        onClickIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent onClickPendingIntent = PendingIntent.getActivity(this, 0, onClickIntent, 0);
+
+        //For display and bind new intent according to playbackStatus
         //Build a new notification according to the current state of the MediaPlayer
         if (playbackStatus == PlaybackStatus.PLAYING) {
             notificationAction = android.R.drawable.ic_media_pause;
@@ -596,12 +622,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             play_pauseAction = playbackAction(0);
         }
 
-        ////Newly added Notification Channel
+        ////Newly added Notification Channel, try to compatiable different API
         NotificationChannel channel = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             channel = new NotificationChannel("my_service_urgent", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
-            //chan.EnableVibration( false );
-            //chan.LockscreenVisibility = NotificationVisibility.Secret;
+            //channel.EnableVibration( false );
+            //channel.LockscreenVisibility = NotificationVisibility.Secret;
 
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.createNotificationChannel(channel);
@@ -612,7 +638,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 R.drawable.songicon_drum); //replace with your own image
 
         // Create a new Notification
-        NotificationCompat.Builder notificationBuilder = (NotificationCompat.Builder) new NotificationCompat.Builder(this)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
+                // Control whether the timestamp is shown
                 .setShowWhen(false)
                 // Set the Notification style
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
@@ -632,13 +659,24 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 // Add playback actions
                 .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
                 .addAction(notificationAction, "pause", play_pauseAction)
-                .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2));
+                .addAction(android.R.drawable.ic_media_next, "next", playbackAction(2))
+                //// Add onClick action
+                .setContentIntent(onClickPendingIntent)
+                .setOngoing(true);
 
+        //Also belongs to above
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             notificationBuilder.setChannelId(channel.getId());
         }
 
-        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notificationBuilder.build());
+        //Set up the real Notification
+        notification = notificationBuilder.build();
+
+        //Build the notification using Builder
+        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(NOTIFICATION_ID, notification);
+
+        //Start it as foreground service
+        notification.flags = notification.flags | Notification.FLAG_NO_CLEAR;     // NO_CLEAR makes the notification stay when the user performs a "delete all" command
     }
 
     private void removeNotification() {
@@ -646,7 +684,16 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         notificationManager.cancel(NOTIFICATION_ID);
     }
 
-    //Used by Building Notification to give action
+    private void stopMyService() {
+        // For foreground service
+        stopForeground(true);
+        stopSelf();
+        isServiceRunning = false;
+    }
+
+    //Used by Building Notification to give action, this bind all the intents to the notification
+    //so when certain action/intent is performed, it will transit to handleIncomingActions
+    //which is handled by MediaSession and Transport Controls to control the media player
     private PendingIntent playbackAction(int actionNumber) {
         Intent playbackAction = new Intent(this, MediaPlayerService.class);
         switch (actionNumber) {

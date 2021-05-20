@@ -9,12 +9,15 @@ public class Audio implements Serializable {
     private String album = "No album";
     private String artist = "No artist";
     private byte[] albumArt;
+    private int duration;
 
-    public Audio(String data, String title, String album, String artist) {
+    public Audio(String data, String title, String album, String artist, byte[] albumArt, int duration) {
         this.data = data;
         this.title = title;
         this.album = album;
         this.artist = artist;
+        this.albumArt = albumArt;
+        this.duration = duration;
     }
 
     public String getData() {
@@ -47,5 +50,21 @@ public class Audio implements Serializable {
 
     public void setArtist(String artist) {
         this.artist = artist;
+    }
+
+    public byte[] getAlbumArt() {
+        return albumArt;
+    }
+
+    public void setAlbumArt(byte[] albumArt) {
+        this.albumArt = albumArt;
+    }
+
+    public int getDuration() {
+        return duration;
+    }
+
+    public void setDuration(int duration) {
+        this.duration = duration;
     }
 }

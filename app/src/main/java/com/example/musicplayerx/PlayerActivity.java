@@ -123,7 +123,7 @@ public class PlayerActivity extends AppCompatActivity {
         songName2.setText(activeAudio.getTitle());
         songArtist2.setText(activeAudio.getArtist());
 
-        endTime.setText(String.valueOf(mediaPlayer.getDuration()));
+        endTime.setText(String.valueOf(activeAudio.getDuration()));
 
     }
 
@@ -165,7 +165,7 @@ public class PlayerActivity extends AppCompatActivity {
             };
         });
 
-        seekBar.setMax(mediaPlayer.getDuration());
+        seekBar.setMax(activeAudio.getDuration());
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {

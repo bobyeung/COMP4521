@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.database.Cursor;
+import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -122,13 +123,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         //Loading files, need to be first
         loadAudio();
 
+        //load service requirements
+        loadStorageForService();
+
+        //Just some view settings
         setUpToolbar();
         setUpFloatingButton();
         setUpViewPager2();
         setUpDrawer();
 
         ////Testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
-        playAudio(0);
+        //playAudio(0);
     }
 
     @Override
@@ -232,9 +237,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             storage.storeAudioIndex(audioIndex);
 
             //startService only first time call its onCreate, AND also once for onStart BECAUSE we use broadcast to play audio
-            Intent playerIntent = new Intent(this, MediaPlayerService.class);
-            ////Intent playerIntent = new Intent(getApplicationContext(), MediaPlayerService.class);
-            ////playerIntent.setAction(MainActivity.ACTION_START_SERVICE);
+            ////Intent playerIntent = new Intent(this, MediaPlayerService.class);
+            Intent playerIntent = new Intent(getApplicationContext(), MediaPlayerService.class);
+            playerIntent.setAction(MainActivity.ACTION_START_SERVICE);
             startService(playerIntent);
             bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE); //seems binding needs time to process
 
@@ -263,18 +268,42 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (cursor != null && cursor.getCount() > 0) {
             audioList = new ArrayList<>();
             while (cursor.moveToNext()) {
+                //Cursor for normal metadata is better
                 String data = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                 String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                 String album = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM));
                 String artist = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.ARTIST));
 
-                Log.d("metadata", data + " " + title + " " + album + " " + artist);
+                //Metadata Retriever for special metadata
+                MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+                mmr.setDataSource(data);  //Need to use this full path
+                String len = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
+                int duration = Integer.parseInt(len);
+
+                Log.d("metadata", data + " " + title + " " + album + " " + artist + " " + duration);
 
                 // Save to audioList
-                audioList.add(new Audio(data, title, album, artist));
+                audioList.add(new Audio(data, title, album, artist, null, duration));
             }
         }
         cursor.close();
+    }
+
+    private void loadStorageForService(){
+        //Try getting saved preference for loading, if not, used default value of audioList and 0 index
+        StorageUtil storage = new StorageUtil(getApplicationContext());
+        if (storage.loadAudio() == null){
+            storage.storeAudio(audioList);
+        }
+        if (storage.loadAudioIndex() == -1){
+            storage.storeAudioIndex(0);
+        }
+
+        //Start and bind the service, the first time it starts will startforeground with notification
+        Intent playerIntent = new Intent(getApplicationContext(), MediaPlayerService.class);
+        playerIntent.setAction(MainActivity.ACTION_START_SERVICE);
+        startService(playerIntent);
+        //bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE); //seems binding needs time to process
     }
 
 }
