@@ -20,6 +20,7 @@ import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Base64;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -69,7 +70,7 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
-
+        Log.d("Player", "1");
         setUpView();
 
         //To get the arguments from intent
@@ -77,6 +78,7 @@ public class PlayerActivity extends AppCompatActivity {
 
         //Match button
         setUpListener();
+        Log.d("Player", "2");
     }
 
     @Override
@@ -120,6 +122,8 @@ public class PlayerActivity extends AppCompatActivity {
         //byte[] decodedString = mmr.getEmbeddedPicture();
         //songIcon2.setImageBitmap(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
 
+        Log.d("player album", String.valueOf(activeAudio.getAlbumArt()));
+        songIcon2.setImageBitmap(activeAudio.getAlbumArtBitmap());
         songName2.setText(activeAudio.getTitle());
         songArtist2.setText(activeAudio.getArtist());
 

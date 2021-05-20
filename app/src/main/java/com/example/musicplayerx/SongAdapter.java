@@ -2,8 +2,11 @@ package com.example.musicplayerx;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.Layout;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -72,12 +75,18 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        holder.songIcon.setImageResource(iconList.get(position));
-        holder.songName.setText(songs.get(position).getTitle());
-        holder.songArtist.setText(songs.get(position).getArtist());
+        //Use the info from Audio if have, otherwise use default such as iconList
+        Log.d("SongAdapter", "1");
+
+        Audio activeAudio = songs.get(position);
+
+        holder.songIcon.setImageBitmap(activeAudio.getAlbumArtBitmap());
+        holder.songName.setText(activeAudio.getTitle());
+        holder.songArtist.setText(activeAudio.getArtist());
 
         clickListener = new SongOnClickListener(position);
         holder.itemView.setOnClickListener(clickListener);
+        Log.d("SongAdapter", "2");
     }
 
     @Override

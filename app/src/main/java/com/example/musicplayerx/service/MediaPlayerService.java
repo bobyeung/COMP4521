@@ -18,6 +18,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.RemoteException;
+import android.renderscript.RenderScript;
 import android.support.v4.media.MediaMetadataCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
@@ -88,7 +89,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private MediaSessionCompat mediaSession;
     public static MediaControllerCompat.TransportControls transportControls;    ////private non-static initially
 
-    //AudioPlayer notification ID
+    //AudioPlayer notification ID (to identify instance, if 2 of them then 2 notifications)
     private static final int NOTIFICATION_ID = 101;
     public static boolean isServiceRunning = false;
     private Notification notification;
@@ -228,6 +229,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         //Handle Intent action from MediaSession.TransportControls
         handleIncomingActions(intent);
         ////return super.onStartCommand(intent, flags, startId);
+        //will stick to the notification top
         return START_STICKY;
     }
 
@@ -260,7 +262,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         removeAudioFocus();
 
-        removeNotification();
+        ////removeNotification();
 
         /// Unregister BroadcastReceivers
         if (phoneStateListener != null) {   //Disable the PhoneStateListener
@@ -301,7 +303,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             stopSelf();
         }
 
-        mediaPlayer.prepareAsync();
+        //Initial Start Service should not automatically play song
+        if (isServiceRunning){
+            mediaPlayer.prepareAsync();
+        }
     }
 
     public void playMedia() {
@@ -385,9 +390,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private BroadcastReceiver becomingNoisyReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            //pause audio on ACTION_AUDIO_BECOMING_NOISY
-            pauseMedia();
-            buildNotification(PlaybackStatus.PAUSED);
+        //pause audio on ACTION_AUDIO_BECOMING_NOISY
+        pauseMedia();
+        buildNotification(PlaybackStatus.PAUSED);
         }
     };
 
@@ -396,30 +401,30 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            Log.v("Service broadcast", "broadcast received");
+        Log.v("Service broadcast", "broadcast received");
 
-            //Get the new media index form SharedPreferences
-            StorageUtil storage = new StorageUtil(getApplicationContext());
-            audioIndex = storage.loadAudioIndex();
-            ////TODO tried change the audioList
-            audioList = storage.loadAudio();
+        //Get the new media index form SharedPreferences
+        StorageUtil storage = new StorageUtil(getApplicationContext());
+        audioIndex = storage.loadAudioIndex();
+        ////TODO tried change the audioList
+        audioList = storage.loadAudio();
 
-            //***Active audio won't change, using last song if index is inapproriate
-            if (audioIndex != -1 && audioIndex < audioList.size()) {
-                //index is in a valid range
-                activeAudio = audioList.get(audioIndex);
-            } else {
-                //seems useless, still play the activeAudio, if add return can prevent
-                stopSelf();
-            }
+        //***Active audio won't change, using last song if index is inapproriate
+        if (audioIndex != -1 && audioIndex < audioList.size()) {
+            //index is in a valid range
+            activeAudio = audioList.get(audioIndex);
+        } else {
+            //seems useless, still play the activeAudio, if add return can prevent
+            stopSelf();
+        }
 
-            //A PLAY_NEW_AUDIO action received
-            //reset mediaPlayer to play the new Audio
-            stopMedia();
-            mediaPlayer.reset();
-            initMediaPlayer();
-            updateMetaData();
-            buildNotification(PlaybackStatus.PLAYING);
+        //A PLAY_NEW_AUDIO action received
+        //reset mediaPlayer to play the new Audio
+        stopMedia();
+        mediaPlayer.reset();
+        initMediaPlayer();
+        updateMetaData();
+        buildNotification(PlaybackStatus.PLAYING);
         }
     };
 
@@ -532,7 +537,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             @Override
             public void onStop() {
                 super.onStop();
-                removeNotification();
+                ////removeNotification();
                 stopSelf();
             }
 
@@ -546,8 +551,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private void updateMetaData() {
         ////TODO to give icon according to song
         Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
-                R.drawable.songicon_drum); //replace with medias albumArt
+                R.drawable.songicon_drum);  //replace with media albumArt
 
+        ////Not sure what does this means
         // Update the current metadata
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
                 .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
@@ -637,7 +643,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
                 R.drawable.songicon_drum); //replace with your own image
 
-        // Create a new Notification
+        // Create a new Notification (seems setting priority makes it worse)
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
                 // Control whether the timestamp is shown
                 .setShowWhen(false)
@@ -647,6 +653,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 .setMediaSession(mediaSession.getSessionToken())
                 // Show our playback controls in the compact notification view.
                 .setShowActionsInCompactView(0, 1, 2))
+                ////.setDeleteIntent()
                 // Set the Notification color and can be changed
                 .setColor(getResources().getColor(R.color.design_default_color_on_primary))
                 // Set the small icons and can be changed
@@ -654,8 +661,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 // Set Notification content information
                 .setLargeIcon(largeIcon)                // Set the large and small icons
                 .setContentText(activeAudio.getArtist())
-                .setContentTitle(activeAudio.getAlbum())
-                .setContentInfo(activeAudio.getTitle())
+                .setContentTitle(activeAudio.getTitle())
+                ////.setContentInfo(activeAudio.getTitle())
                 // Add playback actions
                 .addAction(android.R.drawable.ic_media_previous, "previous", playbackAction(3))
                 .addAction(notificationAction, "pause", play_pauseAction)

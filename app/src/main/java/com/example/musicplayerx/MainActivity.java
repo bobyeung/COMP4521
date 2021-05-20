@@ -142,8 +142,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (serviceBound) {
             // If want run in background even app is closed, comment out this, but
             // TODO**in service notification should have these when pressed "closed"
-            unbindService(serviceConnection);
-            player.stopSelf();
+            ////unbindService(serviceConnection);
+            ////player.stopSelf();
         }
     }
 
@@ -277,13 +277,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 //Metadata Retriever for special metadata
                 MediaMetadataRetriever mmr = new MediaMetadataRetriever();
                 mmr.setDataSource(data);  //Need to use this full path
+                byte[] albumArt = mmr.getEmbeddedPicture();
                 String len = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION);
                 int duration = Integer.parseInt(len);
 
-                Log.d("metadata", data + " " + title + " " + album + " " + artist + " " + duration);
+                Log.d("metadata", data + " " + title + " " + album + " " + artist + " " + albumArt + " " + duration);
 
                 // Save to audioList
-                audioList.add(new Audio(data, title, album, artist, null, duration));
+                audioList.add(new Audio(data, title, album, artist, albumArt, duration));
             }
         }
         cursor.close();
@@ -303,7 +304,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         Intent playerIntent = new Intent(getApplicationContext(), MediaPlayerService.class);
         playerIntent.setAction(MainActivity.ACTION_START_SERVICE);
         startService(playerIntent);
-        //bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE); //seems binding needs time to process
+        /*
+        if (!serviceBound){
+            bindService(playerIntent, serviceConnection, Context.BIND_NOT_FOREGROUND); //seems binding needs time to process
+        }
+         */
     }
-
 }

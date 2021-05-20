@@ -1,5 +1,8 @@
 package com.example.musicplayerx;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+
 import java.io.Serializable;
 
 public class Audio implements Serializable {
@@ -8,8 +11,8 @@ public class Audio implements Serializable {
     private String title = "No title";
     private String album = "No album";
     private String artist = "No artist";
-    private byte[] albumArt;
-    private int duration;
+    public byte[] albumArt = null;
+    private int duration = 0;
 
     public Audio(String data, String title, String album, String artist, byte[] albumArt, int duration) {
         this.data = data;
@@ -59,6 +62,8 @@ public class Audio implements Serializable {
     public void setAlbumArt(byte[] albumArt) {
         this.albumArt = albumArt;
     }
+
+    public Bitmap getAlbumArtBitmap() { return BitmapFactory.decodeByteArray(albumArt, 0, albumArt.length); }
 
     public int getDuration() {
         return duration;

@@ -5,6 +5,10 @@ import androidx.lifecycle.ViewModelProvider;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -27,6 +31,7 @@ import com.example.musicplayerx.SongAdapter;
 import com.example.musicplayerx.Utility;
 import com.example.musicplayerx.service.MediaPlayerService;
 
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.io.Serializable;
@@ -37,6 +42,7 @@ public class SongFragment extends Fragment {
 
     ArrayList<Audio> audioList;
 
+    // Should be just match it one by one, because this fragment is unique to this arraylist
     ArrayList<Integer> iconId = new ArrayList<Integer>();
     ArrayList<Integer> iconList;
 
@@ -63,7 +69,7 @@ public class SongFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         //Find the views for UI
         recyclerView = view.findViewById(R.id.songRecycler);
-
+        Log.d("SongFrag", "1");
         //Recycler View Adapter
         Field[] fields = R.drawable.class.getFields();
         for (Field field : fields) {
@@ -80,11 +86,24 @@ public class SongFragment extends Fragment {
         audioList = (ArrayList<Audio>) getArguments().getSerializable("songs");
         iconList = Utility.repeatElements(iconId, audioList.size());
 
+        //Set back the albumArt if null
+        for (int i = 0; i < audioList.size(); i++) {
+            if (audioList.get(i).getAlbumArt() == null){
+                Drawable d = getResources().getDrawable(iconList.get(i)); // the drawable (Captain Obvious, to the rescue!!!)
+                Bitmap bitmap = ((BitmapDrawable)d).getBitmap();
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+                byte[] bitmapdata = stream.toByteArray();
+                audioList.get(i).setAlbumArt(bitmapdata);
+                Log.d("albumArt", i + String.valueOf(audioList.get(i).getAlbumArt()));
+            }
+        }
+
         //Set up the view
         SongAdapter songAdapter = new SongAdapter(getContext(), iconList, audioList);
         recyclerView.setAdapter(songAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));   //just use for set orientation
-
+        Log.d("SongFrag", "2");
     }
 
 
