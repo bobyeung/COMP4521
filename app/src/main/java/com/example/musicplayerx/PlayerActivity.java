@@ -122,8 +122,8 @@ public class PlayerActivity extends AppCompatActivity {
         //byte[] decodedString = mmr.getEmbeddedPicture();
         //songIcon2.setImageBitmap(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
 
-        Log.d("player album", String.valueOf(activeAudio.getAlbumArt()));
-        songIcon2.setImageBitmap(activeAudio.getAlbumArtBitmap());
+        //Log.d("player album", String.valueOf(activeAudio.getAlbumArt()));
+        //songIcon2.setImageBitmap(activeAudio.getAlbumArtBitmap());
         songName2.setText(activeAudio.getTitle());
         songArtist2.setText(activeAudio.getArtist());
 
