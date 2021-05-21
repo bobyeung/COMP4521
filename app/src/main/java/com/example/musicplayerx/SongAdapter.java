@@ -22,11 +22,12 @@ import com.example.musicplayerx.service.MediaPlayerService;
 import java.util.ArrayList;
 import java.util.List;
 
-//For displaying on the recycler view
+//For displaying on the recycler view, collaborating with the views
+//Same as fragment, audioList should be local as each one has its own
+//and this is just a utility class to generate recycler view
 public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> {
 
-    ArrayList<Audio> songs;
-    ArrayList<Integer> iconList;
+    ArrayList<Audio> songAdapList;
     Context context;    //Probably who is calling this function
 
     //For click
@@ -43,26 +44,19 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
         @Override
         public void onClick(View v)
         {
-            /*
             MainActivity mainActivity = (MainActivity) context;
-            mainActivity.playAudio(position);
+            Intent intent = new Intent(context, PlayerActivity.class);
 
-            Intent intent = new Intent(context, PlayerActivity.class);
-            intent.putExtra("songs", songs);
-            intent.putExtra("activeSong", MediaPlayerService.activeAudio);
-             */
-            MainActivity mainActivity = (MainActivity) context;
-            Intent intent = new Intent(context, PlayerActivity.class);
-            MediaPlayerService.activeAudio = songs.get(position);
+            //maybe used sharedPreference because it may have been shuffled last time
+            ////Originally just null for saved sharedPreference
             Utility.playAudio(context, position, null);
             context.startActivity(intent);
         }
     };
 
-    public SongAdapter(Context context, ArrayList<Integer> iconList, ArrayList<Audio> songs){
+    public SongAdapter(Context context, ArrayList<Audio> songAdapList){
         this.context = context;
-        this.iconList = iconList;
-        this.songs = songs;
+        this.songAdapList = songAdapList;
     }
 
     @NonNull
@@ -76,11 +70,19 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
         //Use the info from Audio if have, otherwise use default such as iconList
+        //Now it has its own position relative to the audioList given, not really need the recycler view position
         Log.d("SongAdapter", "1");
 
-        Audio activeAudio = songs.get(position);
+        Audio activeAudio = songAdapList.get(position);
 
-        holder.songIcon.setImageBitmap(activeAudio.getAlbumArtBitmap());
+        if (activeAudio.getAlbumArt() != null){
+            holder.songIcon.setImageBitmap(activeAudio.getAlbumArtBitmap());
+        }
+        else{
+            int idPos = position % MainActivity.iconList.size();
+            holder.songIcon.setImageResource(MainActivity.iconList.get(idPos));
+        }
+
         holder.songName.setText(activeAudio.getTitle());
         holder.songArtist.setText(activeAudio.getArtist());
 
@@ -91,9 +93,10 @@ public class SongAdapter extends RecyclerView.Adapter<SongAdapter.MyViewHolder> 
 
     @Override
     public int getItemCount() {
-        return iconList.size();
+        return songAdapList.size();
     }
 
+    //View-dependent
     public class MyViewHolder extends RecyclerView.ViewHolder {
 
         ImageView songIcon;

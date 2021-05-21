@@ -39,6 +39,7 @@ import java.util.ArrayList;
 
 import static android.media.MediaMetadataRetriever.METADATA_KEY_ALBUM;
 import static com.example.musicplayerx.MainActivity.ACTION_MAIN;
+import static com.example.musicplayerx.MainActivity.iconList;
 
 //Seems like the service is not forever running, same as MediaPLayer, only running when required (startService)
 //For 1 activity, can check by seeing the binding of service, when it is in bind, then some media already passed to it
@@ -78,10 +79,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private TelephonyManager telephonyManager;
 
     //List of available Audio files
-    private ArrayList<Audio> audioList;
-    private int resumePosition;         //Used to pause/resume MediaPlayer
-    private int audioIndex = -1;        //Position of the song in the list that is playing
-    public static Audio activeAudio;    ////private non-static initially
+    public static ArrayList<Audio> audioList;   ////private non-static initially
+    private int resumePosition;                 //Used to pause/resume MediaPlayer
+    private int audioIndex = -1;                //Position of the song in the list that is playing
+    public static Audio activeAudio;            ////private non-static initially
+    public static int idPos;
 
     //MediaSession allows interaction with media controllers, volume keys, media buttons, and transport controls
     //Instance is created to to publish media playback information or handle media keys (by using MetaData)
@@ -107,6 +109,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
     }
 
+    //////Helper Functions
+
+    public int getAudioIndex(){
+        return audioIndex;
+    }
+
     //////Basic Overriding methods for MediaPlayer
 
     @Override
@@ -118,9 +126,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onCompletion(MediaPlayer mp) {
         //Invoked when playback of a media source has completed.
+        transportControls.skipToNext();
+
+        ////Try changing above
+        /*
         stopMedia();
         //Stop the service
         stopSelf();
+         */
     }
 
     @Override
@@ -169,11 +182,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         try {
             //Load data from SharedPreferences
             StorageUtil storage = new StorageUtil(getApplicationContext());
-            Log.d("active1", "hi1");
             audioList = storage.loadAudio();
-            Log.d("active1", "hi2");
             audioIndex = storage.loadAudioIndex();
-            Log.d("active1", "hi3");
 
             //***Active audio won't change, using last song if index is inapproriate (not related to -1, just some weird behaviour only)
             //-1 is for detecting StorageUtil.loadIndex
@@ -548,19 +558,25 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         });
     }
 
+    //***Used along with BuildNotification, to update the info in Notification according to
+    //the metadata set, and automatically updated by .setMediaSession(getSessionToken())
     private void updateMetaData() {
+        /*
         ////TODO to give icon according to song
         Bitmap albumArt = BitmapFactory.decodeResource(getResources(),
                 R.drawable.songicon_drum);  //replace with media albumArt
 
-        ////Not sure what does this means
+         */
+        /*
         // Update the current metadata
         mediaSession.setMetadata(new MediaMetadataCompat.Builder()
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
+                //.putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, albumArt)
                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, activeAudio.getArtist())
                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, activeAudio.getAlbum())
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.getTitle())
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, activeAudio.getAlbum())
+                //.putString(MediaMetadataCompat.METADATA_KEY_DURATION, activeAudio.getTitle())
                 .build());
+         */
 
     }
 
@@ -631,17 +647,18 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         ////Newly added Notification Channel, try to compatiable different API
         NotificationChannel channel = null;
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            channel = new NotificationChannel("my_service_urgent", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
-            //channel.EnableVibration( false );
-            //channel.LockscreenVisibility = NotificationVisibility.Secret;
-
+            channel = new NotificationChannel("MusicPLayerX", "My Channel", NotificationManager.IMPORTANCE_DEFAULT);
+            channel.setSound(null, null);
             NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             notificationManager.createNotificationChannel(channel);
         }
 
-        ////TODO to give icon according to song
-        Bitmap largeIcon = BitmapFactory.decodeResource(getResources(),
-                R.drawable.songicon_drum); //replace with your own image
+        //To give icon according to song
+        idPos = audioIndex % iconList.size();
+        Bitmap largeIcon = BitmapFactory.decodeResource(getResources(), iconList.get(idPos));   //replace with your own image
+        if (activeAudio.getAlbumArt() != null){
+            largeIcon = activeAudio.getAlbumArtBitmap();
+        }
 
         // Create a new Notification (seems setting priority makes it worse)
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this)
@@ -650,7 +667,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
                 // Set the Notification style
                 .setStyle(new androidx.media.app.NotificationCompat.MediaStyle()
                 // Attach our MediaSession token
-                .setMediaSession(mediaSession.getSessionToken())
+                ////.setMediaSession(mediaSession.getSessionToken())
                 // Show our playback controls in the compact notification view.
                 .setShowActionsInCompactView(0, 1, 2))
                 ////.setDeleteIntent()

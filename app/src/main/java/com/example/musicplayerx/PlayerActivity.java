@@ -1,48 +1,40 @@
 package com.example.musicplayerx;
 
-import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
-import android.media.session.MediaController;
 import android.os.Bundle;
 
 import com.example.musicplayerx.service.MediaPlayerService;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 
-import android.support.v4.media.MediaMetadataCompat;
+import android.os.Handler;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
-import android.util.Base64;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.concurrent.Callable;
+import java.util.Timer;
+import java.util.TimerTask;
 
+//audioList should could follow Global one because it needs to in sync with noification
 public class PlayerActivity extends AppCompatActivity {
 
-    ImageButton playBtn, previousBtn, nextBtn, repeatBtn, shuffleBtn;
+    ImageButton playBtn, pauseBtn, previousBtn, nextBtn, repeatBtn, shuffleBtn;
     TextView startTime, endTime;
     SeekBar seekBar;
     ImageView songIcon2;
     TextView songName2, songArtist2;
 
     MediaControllerCompat.TransportControls controls = MediaPlayerService.transportControls;
-    Audio activeAudio = MediaPlayerService.activeAudio;
     MediaPlayer mediaPlayer = MediaPlayerService.mediaPlayer;
+
+    private Handler mHandler = new Handler();
 
     /*
     //Action performed when item is clicked
@@ -70,11 +62,15 @@ public class PlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_player);
-        Log.d("Player", "1");
+
+        //Basic set up
         setUpView();
 
-        //To get the arguments from intent
-        getInfo();
+        //Set the arguments to update view
+        setInfo();
+
+        //Running Thread
+        setThread();
 
         //Match button
         setUpListener();
@@ -99,7 +95,8 @@ public class PlayerActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        playBtn = findViewById(R.id.playPause);
+        playBtn = findViewById(R.id.playSong);
+        pauseBtn = findViewById(R.id.pauseSong);
         previousBtn = findViewById(R.id.previousSong);
         nextBtn = findViewById(R.id.nextSong);
         repeatBtn = findViewById(R.id.repeatSong);
@@ -110,25 +107,43 @@ public class PlayerActivity extends AppCompatActivity {
         songIcon2 = findViewById(R.id.songIcon2);
         songName2 = findViewById(R.id.songName2);
         songArtist2 = findViewById(R.id.songArtist2);
+
+        if (mediaPlayer.isPlaying()){
+            playBtn.setEnabled(false);
+            playBtn.setVisibility(View.INVISIBLE);
+        }else{
+            pauseBtn.setEnabled(false);
+            pauseBtn.setVisibility(View.INVISIBLE);
+        }
     }
 
-    private void getInfo(){
-        /*
-        Intent receivedIntent = getIntent();
-        ArrayList<Audio> audioList = (ArrayList<Audio>) receivedIntent.getSerializableExtra("songs");
-        Audio activeAudio = (Audio) receivedIntent.getSerializableExtra("activeSong");
-        */
-        //byte[] decodedString = Base64.decode(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, Base64.DEFAULT);
-        //byte[] decodedString = mmr.getEmbeddedPicture();
-        //songIcon2.setImageBitmap(BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length));
-
-        //Log.d("player album", String.valueOf(activeAudio.getAlbumArt()));
-        //songIcon2.setImageBitmap(activeAudio.getAlbumArtBitmap());
+    private void setInfo(){
+        Audio activeAudio = MediaPlayerService.activeAudio;
+        Log.d("active audio", activeAudio.getTitle() + " " + activeAudio.getListPosition());
+        if (activeAudio.getAlbumArt() != null){
+            songIcon2.setImageBitmap(activeAudio.getAlbumArtBitmap());
+        }
+        else{
+            ////StorageUtil storage = new StorageUtil(getParent()); //try getting parent which is main activity
+            ////int idPos = storage.loadAudioIndex() % MainActivity.iconList.size();
+            //int idPos = activeAudio.getListPosition() % MainActivity.iconList.size();
+            songIcon2.setImageResource(MainActivity.iconList.get(MediaPlayerService.idPos));
+        }
         songName2.setText(activeAudio.getTitle());
         songArtist2.setText(activeAudio.getArtist());
 
-        endTime.setText(String.valueOf(activeAudio.getDuration()));
+        int max = mediaPlayer.getDuration() / 1000;
+        endTime.setText((max / 60) + ":" + (max % 60));
+    }
 
+    private void setThread(){
+        new Timer().scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run()
+            {
+                seekBar.setProgress(mediaPlayer.getCurrentPosition() / 1000);
+            }
+        },0,1000);
     }
 
     private void setUpListener(){
@@ -136,6 +151,23 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 controls.play();
+                playBtn.setEnabled(false);
+                playBtn.setVisibility(View.INVISIBLE);
+
+                pauseBtn.setEnabled(true);
+                pauseBtn.setVisibility(View.VISIBLE);
+            }
+        });
+
+        pauseBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                controls.pause();
+                pauseBtn.setEnabled(false);
+                pauseBtn.setVisibility(View.INVISIBLE);
+
+                playBtn.setEnabled(true);
+                playBtn.setVisibility(View.VISIBLE);
             }
         });
 
@@ -143,7 +175,8 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 controls.skipToPrevious();
-                getInfo();
+                finish();
+                startActivity(getIntent());
             };
         });
 
@@ -151,7 +184,8 @@ public class PlayerActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 controls.skipToNext();
-                getInfo();
+                finish();
+                startActivity(getIntent());
             };
         });
 
@@ -169,13 +203,52 @@ public class PlayerActivity extends AppCompatActivity {
             };
         });
 
-        seekBar.setMax(activeAudio.getDuration());
+        seekBar.setMax(mediaPlayer.getDuration() / 1000);    //milleseconds originally
+        seekBar.setProgress(mediaPlayer.getCurrentPosition());
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                controls.seekTo(progress);
-            }
 
+                int min, sec;
+                int mCurrentPosition = seekBar.getProgress();
+
+                min = mCurrentPosition / 60;
+                sec = mCurrentPosition % 60;
+
+                startTime.setText(min + ":" + String.format("%02d", sec));
+
+                if(fromUser){
+                    mediaPlayer.seekTo(progress * 1000);
+                    seekBar.setProgress(progress);
+                }
+                /*
+                if (fromUser) {
+                    Runnable mRunnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            int min, sec;
+                            //Checking if the music player is null or not otherwise it may throw an exception
+                            if (mediaPlayer != null) {
+                                Log.d("mp", String.valueOf(mediaPlayer.getCurrentPosition()));
+                                Log.d("sb", String.valueOf(seekBar.getProgress()));
+                                Log.d("sb2", String.valueOf(seeked_progress));
+                                int mCurrentPosition = seekBar.getProgress();
+
+                                min = mCurrentPosition / 60;
+                                sec = mCurrentPosition % 60;
+
+                                Log.e("Music Player Activity", "Minutes : " + min + " Seconds : " + sec);
+
+                                startTime.setText(min + ":" + sec);
+                            }
+                            mHandler.postDelayed(this, 1000);
+                        }
+                    };
+                    mRunnable.run();
+
+                }*/
+            }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
 

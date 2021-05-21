@@ -36,25 +36,26 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.io.Serializable;
 
+//May not be able to use global audioList --> songFragList, because user can browse other fragments
+//and each fragments should have its own list
 public class SongFragment extends Fragment {
 
     private SongViewModel mViewModel;
 
-    ArrayList<Audio> audioList;
+    ArrayList<Audio> songFragList;
 
+    /*
     // Should be just match it one by one, because this fragment is unique to this arraylist
     ArrayList<Integer> iconId = new ArrayList<Integer>();
     ArrayList<Integer> iconList;
+     */
 
     RecyclerView recyclerView;
 
-    public static SongFragment newInstance(ArrayList<Audio> list) {
-        for (Audio a:list) {
-            Log.d("Frag", a.getTitle());
-        }
+    public static SongFragment newInstance(ArrayList<Audio> songFragList) {
         SongFragment fragment = new SongFragment();
         Bundle arguments = new Bundle();
-        arguments.putSerializable("songs", list);
+        arguments.putSerializable("songs", songFragList);
         fragment.setArguments(arguments);
         return fragment;
     }
@@ -69,6 +70,8 @@ public class SongFragment extends Fragment {
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         //Find the views for UI
         recyclerView = view.findViewById(R.id.songRecycler);
+
+        /*
         Log.d("SongFrag", "1");
         //Recycler View Adapter
         Field[] fields = R.drawable.class.getFields();
@@ -82,30 +85,38 @@ public class SongFragment extends Fragment {
             }
         }
 
-        //Repeat based on audioList
-        audioList = (ArrayList<Audio>) getArguments().getSerializable("songs");
-        iconList = Utility.repeatElements(iconId, audioList.size());
+        //Repeat based on songFragList
+        songFragList = (ArrayList<Audio>) getArguments().getSerializable("songs");
+        iconList = Utility.repeatElements(iconId, songFragList.size());
+         */
 
+        //Each fragment should have different songFragList, storing the audio with different position
+        songFragList = (ArrayList<Audio>) getArguments().getSerializable("songs");
+        for(int i = 0; i < songFragList.size(); i++){
+            songFragList.get(i).setListPosition(i);
+        }
+
+        /*
         //Set back the albumArt if null
-        for (int i = 0; i < audioList.size(); i++) {
-            if (audioList.get(i).getAlbumArt() == null){
+        for (int i = 0; i < songFragList.size(); i++) {
+            if (songFragList.get(i).getAlbumArt() == null){
                 Drawable d = getResources().getDrawable(iconList.get(i)); // the drawable (Captain Obvious, to the rescue!!!)
                 Bitmap bitmap = ((BitmapDrawable)d).getBitmap();
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
                 byte[] bitmapdata = stream.toByteArray();
-                audioList.get(i).setAlbumArt(bitmapdata);
-                Log.d("albumArt", i + String.valueOf(audioList.get(i).getAlbumArt()));
+                songFragList.get(i).setAlbumArt(bitmapdata);
+                Log.d("albumArt", i + String.valueOf(songFragList.get(i).getAlbumArt()));
             }
         }
+         */
 
         //Set up the view
-        SongAdapter songAdapter = new SongAdapter(getContext(), iconList, audioList);
+        SongAdapter songAdapter = new SongAdapter(getContext(), songFragList);
         recyclerView.setAdapter(songAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));   //just use for set orientation
         Log.d("SongFrag", "2");
     }
-
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {

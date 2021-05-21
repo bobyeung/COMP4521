@@ -66,7 +66,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:gravity="center"
-        android:text="Start Time"
+        android:text="0:00"
         android:textColor="@color/black"
         android:textSize="14sp"
         app:layout_constraintBottom_toBottomOf="@+id/seekBar"
@@ -93,13 +93,13 @@
         android:id="@+id/seekBar"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toTopOf="@+id/playPause"
+        app:layout_constraintBottom_toTopOf="@+id/playSong"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/songName2" />
 
     <ImageButton
-        android:id="@+id/playPause"
+        android:id="@+id/playSong"
         android:layout_width="60dp"
         android:layout_height="60dp"
         android:layout_marginTop="200dp"
@@ -108,7 +108,20 @@
         android:contentDescription="play"
         android:scaleType="fitCenter"
         android:src="@drawable/playicon"
-        android:tint="?android:attr/colorPressedHighlight"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/songIcon2" />
+
+    <ImageButton
+        android:id="@+id/pauseSong"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="200dp"
+        android:adjustViewBounds="true"
+        android:background="@null"
+        android:contentDescription="pause"
+        android:scaleType="fitCenter"
+        android:src="@drawable/pauseicon"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/songIcon2" />
@@ -124,8 +137,8 @@
         android:contentDescription="previous"
         android:scaleType="fitCenter"
         android:src="@drawable/previousicon"
-        app:layout_constraintEnd_toStartOf="@+id/playPause"
-        app:layout_constraintTop_toTopOf="@+id/playPause" />
+        app:layout_constraintEnd_toStartOf="@+id/playSong"
+        app:layout_constraintTop_toTopOf="@+id/playSong" />
 
     <ImageButton
         android:id="@+id/nextSong"
@@ -138,8 +151,8 @@
         android:contentDescription="next"
         android:scaleType="fitCenter"
         android:src="@drawable/nexticon"
-        app:layout_constraintStart_toEndOf="@+id/playPause"
-        app:layout_constraintTop_toTopOf="@+id/playPause" />
+        app:layout_constraintStart_toEndOf="@+id/playSong"
+        app:layout_constraintTop_toTopOf="@+id/playSong" />
 
     <ImageButton
         android:id="@+id/repeatSong"
@@ -153,7 +166,7 @@
         android:scaleType="fitCenter"
         android:src="@drawable/repeaticon_all"
         app:layout_constraintEnd_toStartOf="@+id/previousSong"
-        app:layout_constraintTop_toTopOf="@+id/playPause" />
+        app:layout_constraintTop_toTopOf="@+id/playSong" />
 
     <ImageButton
         android:id="@+id/shuffleSong"
@@ -167,6 +180,6 @@
         android:scaleType="fitCenter"
         android:src="@drawable/shuffleicon"
         app:layout_constraintStart_toEndOf="@+id/nextSong"
-        app:layout_constraintTop_toTopOf="@+id/playPause" />
+        app:layout_constraintTop_toTopOf="@+id/playSong" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -11,8 +11,10 @@ public class Audio implements Serializable {
     private String title = "No title";
     private String album = "No album";
     private String artist = "No artist";
-    public byte[] albumArt = null;
+    private byte[] albumArt = null;
     private int duration = 0;
+
+    private int listPosition;
 
     public Audio(String data, String title, String album, String artist, byte[] albumArt, int duration) {
         this.data = data;
@@ -63,7 +65,10 @@ public class Audio implements Serializable {
         this.albumArt = albumArt;
     }
 
-    public Bitmap getAlbumArtBitmap() { return BitmapFactory.decodeByteArray(albumArt, 0, albumArt.length); }
+    public Bitmap getAlbumArtBitmap() {
+        if (albumArt == null) return null;
+        return BitmapFactory.decodeByteArray(albumArt, 0, albumArt.length);
+    }
 
     public int getDuration() {
         return duration;
@@ -72,4 +77,8 @@ public class Audio implements Serializable {
     public void setDuration(int duration) {
         this.duration = duration;
     }
+
+    public int getListPosition() { return listPosition; }
+
+    public void setListPosition(int listPosition) { this.listPosition = listPosition; }
 }

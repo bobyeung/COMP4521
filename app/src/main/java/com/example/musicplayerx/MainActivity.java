@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 import androidx.viewpager2.widget.ViewPager2;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -48,8 +49,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public static final String ACTION_START_SERVICE = "ACTION_START_SERVICE";
     public static final String ACTION_MAIN = "ACTION_MAIN";
 
-    ////Originally private
-    public ArrayList<Audio> audioList;
+    private ArrayList<Audio> audioList = new ArrayList<>();
+    public static ArrayList<Integer> iconList = new ArrayList<>();
 
     // Default Navigation Menu
     private AppBarConfiguration mAppBarConfiguration;
@@ -131,6 +132,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setUpFloatingButton();
         setUpViewPager2();
         setUpDrawer();
+        setUpIconList();
 
         ////Testing, play the first audio in the ArrayList, be sure to have 1 audio for now or otherwise will crash
         //playAudio(0);
@@ -150,6 +152,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean("ServiceState", serviceBound);
+        savedInstanceState.putSerializable("IconList", iconList);
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -157,6 +160,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void onRestoreInstanceState(Bundle savedInstanceState) {
         super.onRestoreInstanceState(savedInstanceState);
         serviceBound = savedInstanceState.getBoolean("ServiceState");
+        iconList = (ArrayList<Integer>) savedInstanceState.getSerializable("IconList");
     }
 
     ////// For Navigataion Menu
@@ -222,6 +226,20 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         .setAction("Action", null).show();
             }
         });
+    }
+
+    //To Set it to be an array, so position mod array.size can find the icon
+    private void setUpIconList(){
+        Field[] fields = R.drawable.class.getFields();
+        for (Field field : fields) {
+            if (field.getName().startsWith(getResources().getString(R.string.builtin_icon))) {
+                try {
+                    iconList.add(field.getInt(null));
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                };
+            }
+        }
     }
 
     ////// MediaPlayerService Related Methods
